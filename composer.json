@@ -1,5 +1,5 @@
 {
-    "name": "Greatwolf3/filament-module-generator",
+    "name": "greatwolf3/filament-module-generator",
     "description": "Filament 5 plugin for generating Laravel modules with nwidart/laravel-modules integration",
     "keywords": [
         "laravel",

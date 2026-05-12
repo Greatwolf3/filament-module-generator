@@ -1,5 +1,5 @@
 {
-    "name": "greatwolf/filament-module-generator",
+    "name": "Greatwolf3/filament-module-generator",
     "description": "Filament 5 plugin for generating Laravel modules with nwidart/laravel-modules integration",
     "keywords": [
         "laravel",
@@ -9,7 +9,7 @@
         "generator",
         "plugin"
     ],
-    "homepage": "https://github.com/greatwolf/filament-module-generator",
+    "homepage": "https://github.com/Greatwolf3/filament-module-generator",
     "license": "MIT",
     "authors": [
         {

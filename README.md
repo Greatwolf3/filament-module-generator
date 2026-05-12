@@ -1,4 +1,4 @@
-# Filament Module Generator
+# Filament Module Generator XXX
 
 Un plugin per Filament 5 che semplifica la generazione di risorse per moduli Laravel con `nwidart/laravel-modules`.
 

@@ -15,7 +15,7 @@ Un plugin per Filament 5 che semplifica la generazione di risorse per moduli Lar
 ## Installazione
 
 ```bash
-composer require zampaviaggi/filament-module-generator
+composer require Greatwolf/filament-module-generator
 ```
 
 Il provider del servizio verrà registrato automaticamente.

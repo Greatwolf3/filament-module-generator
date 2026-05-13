@@ -15,16 +15,16 @@ Un plugin per Filament 5 che semplifica la generazione di risorse per moduli Lar
 ## Installazione
 
 ```bash
-composer require Greatwolf3/filament-module-generator
+composer require greatwolf3/filament-module-generator
 ```
 
 Il provider del servizio verrà registrato automaticamente.
 
 ## Requisiti
 
-- PHP 8.1+
-- Laravel 10.0+ o 11.0+
-- Filament 3.0+ o 5.0+
+- PHP 8.3+
+- Laravel 13.0+
+- Filament 5.0+
 - nwidart/laravel-modules 13.0+
 
 ## Configurazione

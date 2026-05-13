@@ -29,7 +29,7 @@ class MakeModuleResource extends Command
                 ]);
 
                 // Fix namespace in generated module files to use App\Providers
-                $this->fixModuleProviderNamespaces($module);
+                // $this->fixModuleProviderNamespaces($module);
 
                 if ($exitCode !== 0) {
                     $this->error("❌ Errore durante la creazione del modulo '{$module}'.");
@@ -220,7 +220,7 @@ class MakeModuleResource extends Command
 
 namespace Modules\\{$module}\\Filament\\Resources;
 
-use Modules\\{$module}\\App\\Models\\{$name};
+use Modules\\{$module}\\Models\\{$name};
 use BackedEnum;
 use UnitEnum;
 use Filament\\Forms;
@@ -354,7 +354,7 @@ return new class extends Migration
     {
         return "<?php
 
-namespace Modules\\{$module}\\App\\Models;
+namespace Modules\\{$module}\\Models;
 
 use Illuminate\\Database\\Eloquent\\Factories\\HasFactory;
 use Illuminate\\Database\\Eloquent\\Model;
@@ -369,44 +369,5 @@ class {$name} extends Model
 }";
     }
 
-    protected function fixModuleProviderNamespaces($module)
-    {
-        $modulePath = base_path("Modules/{$module}");
 
-        // Fix module.json
-        $moduleJsonPath = "{$modulePath}/module.json";
-        if (File::exists($moduleJsonPath)) {
-            $content = File::get($moduleJsonPath);
-            $content = str_replace(
-                "\"Modules\\\\{$module}\\\\Providers\\\\",
-                "\"Modules\\\\{$module}\\\\App\\\\Providers\\\\",
-                $content
-            );
-            File::put($moduleJsonPath, $content);
-        }
-
-        // Fix provider files
-        $providersDir = "{$modulePath}/app/Providers";
-        if (File::isDirectory($providersDir)) {
-            $providerFiles = File::allFiles($providersDir);
-
-            foreach ($providerFiles as $file) {
-                if ($file->getExtension() === 'php') {
-                    $filePath = $file->getPathname();
-                    $content = File::get($filePath);
-
-                    // Fix namespace
-                    $content = str_replace(
-                        "namespace Modules\\{$module}\\Providers;",
-                        "namespace Modules\\{$module}\\App\\Providers;",
-                        $content
-                    );
-
-                    File::put($filePath, $content);
-                }
-            }
-        }
-
-        $this->info("✅ Namespace corretti nel modulo {$module}.");
-    }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace Greatwolf\FilamentModuleGenerator\Commands;
+namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
@@ -276,33 +276,11 @@ class Edit{$name} extends EditRecord
 
         $content = File::get($panelProviderPath);
 
-        $pluralName = Str::plural($name);
-        $resourceClass = "Modules\\{$module}\\Filament\\Resources\\{$pluralName}\\{$name}Resource";
-
-        // Aggiunge il namespace del modulo se non esiste
-        $namespace = "use Modules\\{$module}\\Filament\\Resources\\{$pluralName}\\{$name}Resource;";
-        if (!str_contains($content, $namespace)) {
+        // Aggiunge la risorsa al discoverResources se non è già presente
+        if (!str_contains($content, "Modules/{$module}/Filament/Resources")) {
             $content = str_replace(
-                "use Illuminate\\View\\Middleware\\ShareErrorsFromSession;",
-                "use Illuminate\\View\\Middleware\\ShareErrorsFromSession;\n{$namespace}",
-                $content
-            );
-        }
-
-        // Aggiunge ModuleDiscoveryPlugin se non esiste
-        if (!str_contains($content, 'ModuleDiscoveryPlugin')) {
-            $content = str_replace(
-                "use Filament\\Widgets\\FilamentInfoWidget;",
-                "use Filament\\Widgets\\FilamentInfoWidget;\nuse Greatwolf\\FilamentModuleGenerator\\Plugins\\ModuleDiscoveryPlugin;",
-                $content
-            );
-        }
-
-        // Aggiunge il plugin ModuleDiscoveryPlugin se non è presente
-        if (!str_contains($content, 'ModuleDiscoveryPlugin::make()')) {
-            $content = str_replace(
-                "->widgets([\n                AccountWidget::class,\n                FilamentInfoWidget::class,\n            ])",
-                "->widgets([\n                AccountWidget::class,\n                FilamentInfoWidget::class,\n            ])\n            ->plugin(ModuleDiscoveryPlugin::make())",
+                "->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')",
+                "->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')\n            ->discoverResources(in: base_path('Modules/{$module}/Filament/Resources'), for: 'Modules\\{$module}\\Filament\\Resources')",
                 $content
             );
         }

@@ -1,193 +1,253 @@
-# Filament Module Generator XXX
+﻿# Filament Module Generator
 
-Un plugin per Filament 5 che semplifica la generazione di risorse per moduli Laravel con `nwidart/laravel-modules`.
+## English
 
-## Caratteristiche
+Filament Module Generator is a Filament 5 package for Laravel projects using `nwidart/laravel-modules`. It helps generate Filament resources inside modules and provides a Filament plugin to automatically discover module resources and clusters in the selected panel.
 
-- ✅ Generazione automatica di moduli come cluster nwidart
-- ✅ Creazione di risorse Filament 5 compatibili
-- ✅ Namespace corretti automatici
-- ✅ Migration con controllo tabella esistente
-- ✅ Navigation groups per organizzazione menu
-- ✅ Tabelle Filament 5 complete e funzionanti
-- ✅ Gestione completa dei moduli (enable/disable/status)
+### Features
 
-## Installazione
+- Generates Filament 5 resources inside Laravel modules.
+- Creates the model when it does not exist.
+- Creates and runs a migration with table-existence checks.
+- Generates module-compatible Filament resource pages.
+- Configures module PSR-4 autoloading.
+- Adds modular URLs using the resource slug, for example `/admin/prova/categories`.
+- Groups generated resources in the Filament menu using the standard `$navigationGroup` property.
+- Provides `ModuleDiscoveryPlugin` to register module resources and clusters in a Filament panel.
+- Includes module management commands.
+
+### Requirements
+
+- PHP 8.3+
+- Laravel 13+
+- Filament 5+
+- `nwidart/laravel-modules` 13+
+
+### Installation
 
 ```bash
 composer require greatwolf3/filament-module-generator
 ```
 
-Il provider del servizio verrà registrato automaticamente.
+The service provider is auto-discovered by Laravel.
 
-## Requisiti
-
-- PHP 8.3+
-- Laravel 13.0+
-- Filament 5.0+
-- nwidart/laravel-modules 13.0+
-
-## Configurazione
-
-Pubblica il file di configurazione (opzionale):
+### Optional configuration
 
 ```bash
 php artisan vendor:publish --tag="filament-module-generator-config"
 ```
 
-## Utilizzo
+### Registering the Filament plugin
 
-### Generazione Risorse Modulo
+Add the plugin to the Filament panel where you want module resources to be discovered:
 
-```bash
-# Genera una risorsa in un modulo esistente
-php artisan module:filament-resource Category Prova
+```php
+use Greatwolf\FilamentModuleGenerator\Plugins\ModuleDiscoveryPlugin;
 
-# Genera una risorsa in un nuovo modulo (crea automaticamente il modulo)
-php artisan module:filament-resource Product Ecommerce
+public function panel(Panel $panel): Panel
+{
+    return $panel
+        // ...
+        ->plugin(ModuleDiscoveryPlugin::make());
+}
 ```
 
-Il comando esegue automaticamente:
-1. ✅ Verifica/creazione del modulo come cluster
-2. ✅ Creazione del modello se non esiste
-3. ✅ Creazione della migration con controllo tabella esistente
-4. ✅ Esecuzione automatica della migration
-5. ✅ Generazione della risorsa Filament 5
-6. ✅ Spostamento automatico nel modulo
-7. ✅ Creazione delle pagine (List, Create, Edit)
+The generator can also update the selected panel automatically using the `--panel` option.
 
-### Gestione Moduli
+### Generate a module resource
 
 ```bash
-# Lista tutti i moduli con status
+php artisan module:filament-resource Category Prova --panel=Admin
+```
+
+You may also use the full panel provider name:
+
+```bash
+php artisan module:filament-resource Category Prova --panel=AdminPanelProvider
+```
+
+The command will:
+
+1. Create the module if it does not exist.
+2. Configure the module autoloading.
+3. Register `ModuleDiscoveryPlugin` in the selected Filament panel.
+4. Create the model if it does not exist.
+5. Create and run the migration if needed.
+6. Generate the Filament resource.
+7. Move the resource and pages into the module namespace.
+8. Configure standard Filament navigation grouping.
+
+### Generated structure
+
+```text
+Modules/
+└── Prova/
+    ├── app/
+    │   └── Models/
+    │       └── Category.php
+    ├── database/
+    │   └── migrations/
+    │       └── 2026_05_14_000000_create_categories_table.php
+    └── Filament/
+        ├── Clusters/
+        │   └── ProvaCluster.php
+        └── Resources/
+            ├── CategoryResource.php
+            └── CategoryResource/
+                └── Pages/
+                    ├── ListCategories.php
+                    ├── CreateCategory.php
+                    └── EditCategory.php
+```
+
+### Generated resource navigation
+
+Generated resources use Filament standard navigation properties:
+
+```php
+protected static ?string $slug = 'prova/categories';
+
+protected static string | UnitEnum | null $navigationGroup = 'Prova';
+```
+
+This keeps URLs modular while letting Filament manage the menu normally.
+
+### Module management
+
+```bash
 php artisan module:manager list
-
-# Abilita un modulo
 php artisan module:manager enable Prova
-
-# Disabilita un modulo (rimuove dal menu Filament)
 php artisan module:manager disable Prova
-
-# Status dettagliato di un modulo
 php artisan module:manager status Prova
 ```
 
-## Struttura Generata
+### License
 
-Il plugin crea la seguente struttura:
+MIT License.
 
+---
+
+## Italiano
+
+Filament Module Generator è un package Filament 5 per progetti Laravel che usano `nwidart/laravel-modules`. Aiuta a generare risorse Filament dentro i moduli e include un plugin Filament per scoprire automaticamente resource e cluster dei moduli nel pannello scelto.
+
+### Funzionalità
+
+- Genera risorse Filament 5 dentro i moduli Laravel.
+- Crea il model se non esiste.
+- Crea ed esegue una migration con controllo sull'esistenza della tabella.
+- Genera pagine Filament compatibili con il namespace del modulo.
+- Configura l'autoload PSR-4 del modulo.
+- Aggiunge URL modulari usando lo slug della resource, ad esempio `/admin/prova/categories`.
+- Raggruppa le risorse generate nel menu Filament usando la proprietà standard `$navigationGroup`.
+- Fornisce `ModuleDiscoveryPlugin` per registrare resource e cluster dei moduli in un pannello Filament.
+- Include comandi per la gestione dei moduli.
+
+### Requisiti
+
+- PHP 8.3+
+- Laravel 13+
+- Filament 5+
+- `nwidart/laravel-modules` 13+
+
+### Installazione
+
+```bash
+composer require greatwolf3/filament-module-generator
 ```
-Modules/
-├── Prova/
-│   ├── app/
-│   │   └── Models/
-│   │       └── Category.php
-│   ├── database/
-│   │   └── migrations/
-│   │       └── 2026_05_12_201234_create_categories_table.php
-│   └── Filament/
-│       └── Resources/
-│           ├── CategoryResource.php
-│           └── CategoryResource/
-│               └── Pages/
-│                   ├── ListCategories.php
-│                   ├── CreateCategory.php
-│                   └── EditCategory.php
+
+Il service provider viene registrato automaticamente da Laravel.
+
+### Configurazione opzionale
+
+```bash
+php artisan vendor:publish --tag="filament-module-generator-config"
 ```
 
-## Esempio di Risorsa Generata
+### Registrare il plugin Filament
+
+Aggiungi il plugin al pannello Filament in cui vuoi scoprire le risorse dei moduli:
 
 ```php
-class CategoryResource extends Resource
+use Greatwolf\FilamentModuleGenerator\Plugins\ModuleDiscoveryPlugin;
+
+public function panel(Panel $panel): Panel
 {
-    protected static ?string $model = Category::class;
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-rectangle-stack';
-    protected static string|UnitEnum|null $navigationGroup = 'Prova';
-
-    public static function form(Schema $form): Schema
-    {
-        return $form
-            ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
-            ]);
-    }
-
-    public static function table(Table $table): Table
-    {
-        return $table
-            ->columns([
-                Tables\Columns\TextColumn::make('name')
-                    ->searchable()
-                    ->sortable(),
-                // ... altre colonne
-            ])
-            ->filters([
-                // filtri disponibili
-            ]);
-    }
+    return $panel
+        // ...
+        ->plugin(ModuleDiscoveryPlugin::make());
 }
 ```
 
-## Funzionalità Avanzate
+Il generatore può aggiornare automaticamente il pannello scelto usando l'opzione `--panel`.
 
-### Auto-discovery Filament
+### Generare una resource di un modulo
 
-Le risorse vengono automaticamente scoperte dal pannello Filament. I moduli disabilitati vengono automaticamente rimossi dal menu.
+```bash
+php artisan module:filament-resource Category Prova --panel=Admin
+```
 
-### Namespace Corretti
+Puoi usare anche il nome completo del panel provider:
 
-Il plugin corregge automaticamente i namespace nei provider dei moduli generati per garantire compatibilità con PSR-4.
+```bash
+php artisan module:filament-resource Category Prova --panel=AdminPanelProvider
+```
 
-### Migration Intelligenti
+Il comando esegue:
 
-Le migration includono controlli per evitare la creazione di tabelle duplicate e vengono eseguite automaticamente.
+1. Creazione del modulo se non esiste.
+2. Configurazione dell'autoload del modulo.
+3. Registrazione di `ModuleDiscoveryPlugin` nel pannello Filament scelto.
+4. Creazione del model se non esiste.
+5. Creazione ed esecuzione della migration se necessario.
+6. Generazione della resource Filament.
+7. Spostamento della resource e delle pagine nel namespace del modulo.
+8. Configurazione del raggruppamento menu standard Filament.
 
-## Comandi Disponibili
+### Struttura generata
 
-| Comando | Descrizione |
-|---------|-------------|
-| `module:filament-resource {name} {module}` | Genera risorsa Filament per modulo |
-| `module:manager list` | Lista tutti i moduli |
-| `module:manager enable {module}` | Abilita modulo |
-| `module:manager disable {module}` | Disabilita modulo |
-| `module:manager status {module}` | Status dettagliato modulo |
+```text
+Modules/
+└── Prova/
+    ├── app/
+    │   └── Models/
+    │       └── Category.php
+    ├── database/
+    │   └── migrations/
+    │       └── 2026_05_14_000000_create_categories_table.php
+    └── Filament/
+        ├── Clusters/
+        │   └── ProvaCluster.php
+        └── Resources/
+            ├── CategoryResource.php
+            └── CategoryResource/
+                └── Pages/
+                    ├── ListCategories.php
+                    ├── CreateCategory.php
+                    └── EditCategory.php
+```
 
-## Integrazione con AdminPanelProvider
+### Navigazione della resource generata
 
-Il plugin richiede l'auto-discovery dei moduli nel tuo `AdminPanelProvider`:
+Le resource generate usano le proprietà standard di Filament:
 
 ```php
-use Nwidart\Modules\Facades\Module;
-use Illuminate\Support\Facades\File;
+protected static ?string $slug = 'prova/categories';
 
-// Nel metodo panel()
-$modulePath = base_path('Modules');
-
-if (File::isDirectory($modulePath)) {
-    $modules = File::directories($modulePath);
-
-    foreach ($modules as $moduleDir) {
-        $moduleName = basename($moduleDir);
-
-        // Verifica se il modulo è abilitato
-        if (!Module::has($moduleName) || !Module::isEnabled($moduleName)) {
-            continue;
-        }
-
-        $baseNamespace = "Modules\\{$moduleName}\\Filament";
-        $basePath = "{$modulePath}/{$moduleName}/Filament";
-
-        // Registra Risorse, Pagine, Widget...
-    }
-}
+protected static string | UnitEnum | null $navigationGroup = 'Prova';
 ```
 
-## Licenza
+In questo modo gli URL restano modulari e il menu viene gestito normalmente da Filament.
 
-MIT License
+### Gestione moduli
 
-## Supporto
+```bash
+php artisan module:manager list
+php artisan module:manager enable Prova
+php artisan module:manager disable Prova
+php artisan module:manager status Prova
+```
 
-Per problemi o richieste di funzionalità, apri una issue su GitHub.
+### Licenza
+
+MIT License.

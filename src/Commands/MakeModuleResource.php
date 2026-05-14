@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 
 class MakeModuleResource extends Command
 {
-    protected $signature = 'module:filament-resource {name} {module}';
+    protected $signature = 'module:filament-resource {name} {module} {--panel= : Nome o classe del Filament PanelProvider da aggiornare}';
     protected $description = 'Genera risorsa e pagine Filament 5 per un modulo nwidart';
 
     public function handle()
@@ -42,6 +42,10 @@ class MakeModuleResource extends Command
                 return 1;
             }
         }
+
+        $this->ensureModuleAutoloadIsConfigured($module);
+        $this->ensureSelectedPanelDiscoversModules();
+        $this->createClusterIfNotExists($module);
 
         // 2. Crea il modello se non esiste
         $this->createModelIfNotExists($name, $module);
@@ -214,17 +218,184 @@ class MakeModuleResource extends Command
         }
     }
 
+    protected function ensureSelectedPanelDiscoversModules(): void
+    {
+        $panelPath = $this->resolvePanelProviderPath();
+
+        if (!$panelPath) {
+            $this->warn("?? Nessun PanelProvider trovato da aggiornare. Usa --panel=NomePanelProvider.");
+            return;
+        }
+
+        $content = File::get($panelPath);
+
+        if (!str_contains($content, 'Greatwolf\\FilamentModuleGenerator\\Plugins\\ModuleDiscoveryPlugin')) {
+            $content = preg_replace(
+                '/use Filament\\Widgets\\FilamentInfoWidget;\r?\n/',
+                "use Filament\\Widgets\\FilamentInfoWidget;\nuse Greatwolf\\FilamentModuleGenerator\\Plugins\\ModuleDiscoveryPlugin;\n",
+                $content,
+                1
+            );
+        }
+
+        if (!str_contains($content, 'ModuleDiscoveryPlugin::make()')) {
+            $content = preg_replace(
+                '/(->colors\(\[\s*\r?\n\s*\'primary\' => [^\]]+\]\))/s',
+                "$1\n            ->plugin(ModuleDiscoveryPlugin::make())",
+                $content,
+                1
+            );
+        }
+
+        File::put($panelPath, $content);
+        $this->info('? PanelProvider aggiornato con ModuleDiscoveryPlugin: ' . $panelPath);
+    }
+    protected function resolvePanelProviderPath(): ?string
+    {
+        $panel = $this->option('panel');
+        $providers = File::glob(app_path('Providers/Filament/*PanelProvider.php')) ?: [];
+
+        if ($panel) {
+            $panel = Str::of($panel)->replace('\\', '/')->afterLast('/')->before('.php')->toString();
+
+            foreach ($providers as $provider) {
+                if (basename($provider, '.php') === $panel || Str::before(basename($provider, '.php'), 'PanelProvider') === $panel) {
+                    return $provider;
+                }
+            }
+
+            $candidate = app_path("Providers/Filament/{$panel}PanelProvider.php");
+            if (File::exists($candidate)) {
+                return $candidate;
+            }
+
+            $candidate = app_path("Providers/Filament/{$panel}.php");
+            if (File::exists($candidate)) {
+                return $candidate;
+            }
+
+            return null;
+        }
+
+        if (count($providers) === 1) {
+            return $providers[0];
+        }
+
+        if (count($providers) > 1) {
+            $choice = $this->choice('Quale Filament PanelProvider vuoi aggiornare?', array_map(fn ($provider) => basename($provider, '.php'), $providers));
+
+            foreach ($providers as $provider) {
+                if (basename($provider, '.php') === $choice) {
+                    return $provider;
+                }
+            }
+        }
+
+        return null;
+    }
+    protected function ensureModuleAutoloadIsConfigured($module): void
+    {
+        $composerPath = base_path("Modules/{$module}/composer.json");
+
+        if (!File::exists($composerPath)) {
+            return;
+        }
+
+        $composer = json_decode(File::get($composerPath), true);
+
+        if (!is_array($composer)) {
+            return;
+        }
+
+        $composer['autoload'] ??= [];
+        $composer['autoload']['psr-4'] ??= [];
+        $composer['autoload']['psr-4']["Modules\\{$module}\\"] = 'app/';
+        $composer['autoload']['psr-4']["Modules\\{$module}\\Filament\\"] = 'Filament/';
+
+        File::put(
+            $composerPath,
+            json_encode($composer, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL
+        );
+
+        $this->refreshComposerAutoload();
+    }
+
+    protected function refreshComposerAutoload(): void
+    {
+        try {
+            $composer = base_path('composer.phar');
+
+            if (File::exists($composer)) {
+                exec(PHP_BINARY . ' ' . escapeshellarg($composer) . ' dump-autoload --no-scripts');
+                return;
+            }
+
+            $laragonComposer = 'C:/laragonzo6/bin/composer/composer.phar';
+
+            if (File::exists($laragonComposer)) {
+                exec(PHP_BINARY . ' ' . escapeshellarg($laragonComposer) . ' dump-autoload --no-scripts');
+                return;
+            }
+
+            exec('composer dump-autoload --no-scripts');
+        } catch (\Throwable $exception) {
+            $this->warn('?? Impossibile aggiornare automaticamente Composer autoload: ' . $exception->getMessage());
+        }
+    }
+    protected function createClusterIfNotExists($module): void
+    {
+        $clusterPath = base_path("Modules/{$module}/Filament/Clusters/{$module}Cluster.php");
+
+        if (File::exists($clusterPath)) {
+            return;
+        }
+
+        $clusterDir = dirname($clusterPath);
+        if (!File::isDirectory($clusterDir)) {
+            File::makeDirectory($clusterDir, 0755, true);
+        }
+
+        File::put($clusterPath, $this->getClusterTemplate($module));
+    }
+
+    protected function getClusterTemplate($module): string
+    {
+        $slug = Str::slug($module);
+
+        return "<?php
+
+namespace Modules\\{$module}\\Filament\\Clusters;
+
+use BackedEnum;
+use Filament\\Clusters\\Cluster;
+
+class {$module}Cluster extends Cluster
+{
+
+    protected static bool \$shouldRegisterNavigation = false;
+
+    protected static string|BackedEnum|null \$navigationIcon = 'heroicon-o-squares-2x2';
+
+    protected static ?string \$navigationLabel = '{$module}';
+
+    protected static ?string \$slug = '{$slug}';
+}
+";
+    }
     protected function generateValidFilament5Resource($source, $dest, $module, $name)
     {
+        $moduleSlug = Str::slug($module);
+        $resourceSlug = Str::plural(Str::kebab($name));
+
         $content = "<?php
 
 namespace Modules\\{$module}\\Filament\\Resources;
 
 use Modules\\{$module}\\Models\\{$name};
 use BackedEnum;
-use UnitEnum;
 use Filament\\Forms;
 use Filament\\Forms\\Form;
+use UnitEnum;
 use Filament\\Resources\\Resource;
 use Filament\\Schemas\\Schema;
 use Filament\\Tables;
@@ -238,6 +409,8 @@ class {$name}Resource extends Resource
     protected static ?string \$model = {$name}::class;
 
     protected static string|BackedEnum|null \$navigationIcon = 'heroicon-o-rectangle-stack';
+
+    protected static ?string \$slug = '{$moduleSlug}/{$resourceSlug}';
 
     protected static string|UnitEnum|null \$navigationGroup = '{$module}';
 
@@ -297,16 +470,16 @@ class {$name}Resource extends Resource
     {
         $content = File::get($source);
 
-        // Fix namespace
-        $content = str_replace(
-            "namespace App\\Filament\\Resources\\{$name}Resource\\Pages;",
+        $pluralName = Str::plural($name);
+
+        $content = preg_replace(
+            '/namespace App\\\\Filament\\\\Resources\\\\(?:' . preg_quote($name . 'Resource', '/') . '|' . preg_quote($pluralName, '/') . ')\\\\Pages;/',
             "namespace Modules\\{$module}\\Filament\\Resources\\{$name}Resource\\Pages;",
             $content
         );
 
-        // Fix use statements
-        $content = str_replace(
-            "use App\\Filament\\Resources\\{$name}Resource;",
+        $content = preg_replace(
+            '/use App\\\\Filament\\\\Resources\\\\(?:' . preg_quote($name . 'Resource', '/') . '|' . preg_quote($pluralName, '/') . ')\\\\' . preg_quote($name . 'Resource', '/') . ';/',
             "use Modules\\{$module}\\Filament\\Resources\\{$name}Resource;",
             $content
         );
@@ -368,6 +541,5 @@ class {$name} extends Model
     ];
 }";
     }
-
 
 }

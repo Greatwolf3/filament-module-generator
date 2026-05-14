@@ -107,11 +107,21 @@ class {$name} extends Model
             $exitCode = Artisan::call('make:migration', [
                 'name' => "create_{$tableName}_table",
                 '--path' => "Modules/{$module}/database/migrations",
-                '--force' => true,
             ]);
 
             if ($exitCode === 0) {
                 $this->info("✅ Migration create_{$tableName}_table creata.");
+
+                // Esegui la migration
+                try {
+                    Artisan::call('migrate', [
+                        '--path' => "Modules/{$module}/database/migrations",
+                    ]);
+                    $this->info("✅ Migration eseguita con successo.");
+                } catch (\Exception $e) {
+                    $this->warn("⚠️ Impossibile eseguire automaticamente la migration: " . $e->getMessage());
+                    $this->info("ℹ️ Esegui manualmente: php artisan migrate --path=Modules/{$module}/database/migrations");
+                }
             }
         } catch (\Exception $e) {
             $this->warn("⚠️ Impossibile creare la migration: " . $e->getMessage());

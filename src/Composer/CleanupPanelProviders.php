@@ -2,11 +2,11 @@
 
 namespace Greatwolf\FilamentModuleGenerator\Composer;
 
-use Composer\Script\Event;
+use Composer\Installer\PackageEvent;
 
 class CleanupPanelProviders
 {
-    public static function prePackageUninstall(Event $event): void
+    public static function prePackageUninstall(PackageEvent $event): void
     {
         $operation = $event->getOperation();
         $package = method_exists($operation, 'getPackage') ? $operation->getPackage() : null;

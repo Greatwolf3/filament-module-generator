@@ -9,18 +9,15 @@ use Illuminate\Support\Str;
 
 class MakeModuleResource extends Command
 {
-    protected $signature = 'module:filament-resource {name} {module} {--panel= : Nome o classe del Filament PanelProvider da aggiornare} {--languages=it,en : Lingue supportate (es: it,en,fr)}';
-    protected $description = 'Genera risorsa e pagine Filament 5 per un modulo nwidart con supporto multilingua';
+    protected $signature = 'module:filament-resource {name} {module} {--panel= : Nome o classe del Filament PanelProvider da aggiornare}';
+    protected $description = 'Genera risorsa e pagine Filament 5 per un modulo nwidart';
 
     public function handle()
     {
         $name = Str::studly($this->argument('name'));
         $module = Str::studly($this->argument('module'));
-        $languages = explode(',', $this->option('languages') ?? 'it,en');
-        $languages = array_map('trim', $languages);
 
         $this->warn("🛠️ Generazione Risorsa e Pagine per Filament 5...");
-        $this->info("🌍 Lingue supportate: " . implode(', ', $languages));
 
         // 1. Verifica che il modulo esista, altrimenti crealo come cluster
         if (!$this->moduleExists($module)) {
@@ -47,13 +44,14 @@ class MakeModuleResource extends Command
         }
 
         $this->ensureModuleAutoloadIsConfigured($module);
-        $this->ensureSelectedPanelDiscoversModules($module);
+        $this->ensureSelectedPanelDiscoversModules();
+        $this->createClusterIfNotExists($module);
 
         // 2. Crea il modello se non esiste
-        $this->createModelIfNotExists($name, $module, $languages);
+        $this->createModelIfNotExists($name, $module);
 
         // 3. Crea la migration se non esiste
-        $this->createMigrationIfNotExists($name, $module, $languages);
+        $this->createMigrationIfNotExists($name, $module);
 
         // 4. Esecuzione comando nativo (genera in app/Filament)
         $this->info("📝 Creazione risorsa Filament...");
@@ -107,11 +105,7 @@ class MakeModuleResource extends Command
         }
 
         if ($resourcePath) {
-            $targetResourceDir = "{$targetBase}/{$pluralName}";
-            if (!File::isDirectory($targetResourceDir)) {
-                File::makeDirectory($targetResourceDir, 0755, true);
-            }
-            $this->generateValidFilament5Resource($resourcePath, "{$targetResourceDir}/{$resourceFile}", $module, $name, $pluralName, $languages);
+            $this->generateValidFilament5Resource($resourcePath, "{$targetBase}/{$resourceFile}", $module, $name);
             $this->info("✅ Risorsa {$name}Resource spostata nel modulo {$module}.");
         } else {
             $this->warn("⚠️ File di risorsa non trovato: {$resourceFile}");
@@ -126,14 +120,14 @@ class MakeModuleResource extends Command
         }
 
         if ($pagesDir) {
-            $targetPagesDir = "{$targetBase}/{$pluralName}/Pages";
+            $targetPagesDir = "{$targetBase}/{$name}Resource/Pages";
             if (!File::isDirectory($targetPagesDir)) {
                 File::makeDirectory($targetPagesDir, 0755, true);
             }
 
             foreach (File::files($pagesDir) as $pageFile) {
                 $pageFileName = $pageFile->getFilename();
-                $this->generateValidFilament5Page($pageFile->getPathname(), "{$targetPagesDir}/{$pageFileName}", $module, $name, $pluralName);
+                $this->generateValidFilament5Page($pageFile->getPathname(), "{$targetPagesDir}/{$pageFileName}", $module, $name);
             }
 
             // Pulisci le cartelle temporanee create da make:filament-resource
@@ -159,7 +153,7 @@ class MakeModuleResource extends Command
         return File::isDirectory(base_path("Modules/{$module}"));
     }
 
-    protected function createModelIfNotExists($name, $module, $languages = ['it', 'en'])
+    protected function createModelIfNotExists($name, $module)
     {
         $modelPath = base_path("Modules/{$module}/app/Models/{$name}.php");
 
@@ -173,12 +167,12 @@ class MakeModuleResource extends Command
             File::makeDirectory($modelDir, 0755, true);
         }
 
-        $modelContent = $this->getModelTemplate($name, $module, $languages);
+        $modelContent = $this->getModelTemplate($name, $module);
         File::put($modelPath, $modelContent);
         $this->info("✅ Modello {$name} creato con successo.");
     }
 
-    protected function createMigrationIfNotExists($name, $module, $languages = ['it', 'en'])
+    protected function createMigrationIfNotExists($name, $module)
     {
         $tableName = Str::plural(Str::snake($name));
         $migrationName = "create_{$tableName}_table";
@@ -206,7 +200,7 @@ class MakeModuleResource extends Command
         }
 
         $migrationPath = "{$migrationsDir}/{$migrationFileName}";
-        $migrationContent = $this->getMigrationTemplate($tableName, $languages);
+        $migrationContent = $this->getMigrationTemplate($tableName);
 
         File::put($migrationPath, $migrationContent);
         $this->info("✅ Migration {$migrationName} creata con successo.");
@@ -224,7 +218,7 @@ class MakeModuleResource extends Command
         }
     }
 
-    protected function ensureSelectedPanelDiscoversModules($module): void
+    protected function ensureSelectedPanelDiscoversModules(): void
     {
         $panelPath = $this->resolvePanelProviderPath();
 
@@ -235,17 +229,26 @@ class MakeModuleResource extends Command
 
         $content = File::get($panelPath);
 
-        // Aggiunge discoverResources per il modulo se non è già presente
-        if (!str_contains($content, "Modules/{$module}/Filament/Resources")) {
-            $content = str_replace(
-                "->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')",
-                "->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')\n            ->discoverResources(in: base_path('Modules/{$module}/Filament/Resources'), for: 'Modules\\{$module}\\Filament\\Resources')",
-                $content
+        if (!str_contains($content, 'Greatwolf\\FilamentModuleGenerator\\Plugins\\ModuleDiscoveryPlugin')) {
+            $content = preg_replace(
+                '/use Filament\\Widgets\\FilamentInfoWidget;\r?\n/',
+                "use Filament\\Widgets\\FilamentInfoWidget;\nuse Greatwolf\\FilamentModuleGenerator\\Plugins\\ModuleDiscoveryPlugin;\n",
+                $content,
+                1
+            );
+        }
+
+        if (!str_contains($content, 'ModuleDiscoveryPlugin::make()')) {
+            $content = preg_replace(
+                '/(->colors\(\[\s*\r?\n\s*\'primary\' => [^\]]+\]\))/s',
+                "$1\n            ->plugin(ModuleDiscoveryPlugin::make())",
+                $content,
+                1
             );
         }
 
         File::put($panelPath, $content);
-        $this->info('? PanelProvider aggiornato con discoverResources: ' . $panelPath);
+        $this->info('? PanelProvider aggiornato con ModuleDiscoveryPlugin: ' . $panelPath);
     }
     protected function resolvePanelProviderPath(): ?string
     {
@@ -339,17 +342,54 @@ class MakeModuleResource extends Command
             $this->warn('?? Impossibile aggiornare automaticamente Composer autoload: ' . $exception->getMessage());
         }
     }
+    protected function createClusterIfNotExists($module): void
+    {
+        $clusterPath = base_path("Modules/{$module}/Filament/Clusters/{$module}Cluster.php");
 
-    protected function generateValidFilament5Resource($source, $dest, $module, $name, $pluralName, $languages = ['it', 'en'])
+        if (File::exists($clusterPath)) {
+            return;
+        }
+
+        $clusterDir = dirname($clusterPath);
+        if (!File::isDirectory($clusterDir)) {
+            File::makeDirectory($clusterDir, 0755, true);
+        }
+
+        File::put($clusterPath, $this->getClusterTemplate($module));
+    }
+
+    protected function getClusterTemplate($module): string
+    {
+        $slug = Str::slug($module);
+
+        return "<?php
+
+namespace Modules\\{$module}\\Filament\\Clusters;
+
+use BackedEnum;
+use Filament\\Clusters\\Cluster;
+
+class {$module}Cluster extends Cluster
+{
+
+    protected static bool \$shouldRegisterNavigation = false;
+
+    protected static string|BackedEnum|null \$navigationIcon = 'heroicon-o-squares-2x2';
+
+    protected static ?string \$navigationLabel = '{$module}';
+
+    protected static ?string \$slug = '{$slug}';
+}
+";
+    }
+    protected function generateValidFilament5Resource($source, $dest, $module, $name)
     {
         $moduleSlug = Str::slug($module);
         $resourceSlug = Str::plural(Str::kebab($name));
 
-        $translatableFields = $this->getTranslatableFields($languages);
-
         $content = "<?php
 
-namespace Modules\\{$module}\\Filament\\Resources\\{$pluralName};
+namespace Modules\\{$module}\\Filament\\Resources;
 
 use Modules\\{$module}\\Models\\{$name};
 use BackedEnum;
@@ -362,7 +402,7 @@ use Filament\\Tables;
 use Filament\\Tables\\Table;
 use Illuminate\\Database\\Eloquent\\Builder;
 use Illuminate\\Database\\Eloquent\\SoftDeletingScope;
-use Modules\\{$module}\\Filament\\Resources\\{$pluralName}\\Pages;
+use Modules\\{$module}\\Filament\\Resources\\{$name}Resource\\Pages;
 
 class {$name}Resource extends Resource
 {
@@ -378,7 +418,6 @@ class {$name}Resource extends Resource
     {
         return \$form
             ->schema([
-                {$translatableFields}
                 Forms\\Components\\TextInput::make('name')
                     ->required()
                     ->maxLength(255),
@@ -427,19 +466,21 @@ class {$name}Resource extends Resource
         File::delete($source);
     }
 
-    protected function generateValidFilament5Page($source, $dest, $module, $name, $pluralName)
+    protected function generateValidFilament5Page($source, $dest, $module, $name)
     {
         $content = File::get($source);
 
+        $pluralName = Str::plural($name);
+
         $content = preg_replace(
             '/namespace App\\\\Filament\\\\Resources\\\\(?:' . preg_quote($name . 'Resource', '/') . '|' . preg_quote($pluralName, '/') . ')\\\\Pages;/',
-            "namespace Modules\\{$module}\\Filament\\Resources\\{$pluralName}\\Pages;",
+            "namespace Modules\\{$module}\\Filament\\Resources\\{$name}Resource\\Pages;",
             $content
         );
 
         $content = preg_replace(
             '/use App\\\\Filament\\\\Resources\\\\(?:' . preg_quote($name . 'Resource', '/') . '|' . preg_quote($pluralName, '/') . ')\\\\' . preg_quote($name . 'Resource', '/') . ';/',
-            "use Modules\\{$module}\\Filament\\Resources\\{$pluralName}\\{$name}Resource;",
+            "use Modules\\{$module}\\Filament\\Resources\\{$name}Resource;",
             $content
         );
 
@@ -447,10 +488,8 @@ class {$name}Resource extends Resource
         File::delete($source);
     }
 
-    protected function getMigrationTemplate($tableName, $languages = ['it', 'en'])
+    protected function getMigrationTemplate($tableName)
     {
-        $languageColumns = $this->getLanguageColumns($languages);
-
         return "<?php
 
 use Illuminate\\Database\\Migrations\\Migration;
@@ -468,7 +507,6 @@ return new class extends Migration
             Schema::create('{$tableName}', function (Blueprint \$table) {
                 \$table->id();
                 \$table->string('name');
-                {$languageColumns}
                 \$table->timestamps();
             });
         }
@@ -485,19 +523,8 @@ return new class extends Migration
 ";
     }
 
-    protected function getLanguageColumns($languages = ['it', 'en']): string
+    protected function getModelTemplate($name, $module)
     {
-        $columns = [];
-        foreach ($languages as $lang) {
-            $columns[] = "                \$table->string('name_{$lang}')->nullable();";
-        }
-        return implode("\n", $columns);
-    }
-
-    protected function getModelTemplate($name, $module, $languages = ['it', 'en'])
-    {
-        $translatableArray = $this->getTranslatableArray($languages);
-
         return "<?php
 
 namespace Modules\\{$module}\\Models;
@@ -511,31 +538,8 @@ class {$name} extends Model
 
     protected \$fillable = [
         'name',
-        {$translatableArray}
-    ];
-
-    protected \$casts = [
-        'name' => 'string',
     ];
 }";
-    }
-
-    protected function getTranslatableFields($languages = ['it', 'en']): string
-    {
-        $fields = [];
-        foreach ($languages as $lang) {
-            $fields[] = "                Forms\\Components\\TextInput::make('name_{$lang}')\n                    ->label('Name ({$lang})')\n                    ->maxLength(255),";
-        }
-        return implode("\n", $fields);
-    }
-
-    protected function getTranslatableArray($languages = ['it', 'en']): string
-    {
-        $fields = [];
-        foreach ($languages as $lang) {
-            $fields[] = "'name_{$lang}',";
-        }
-        return implode("\n        ", $fields);
     }
 
 }

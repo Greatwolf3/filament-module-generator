@@ -17,11 +17,11 @@ class MakeModuleResource extends Command
         $name = Str::studly($this->argument('name'));
         $module = Str::studly($this->argument('module'));
 
-        $this->warn("Ã°Å¸â€ºÂ Ã¯Â¸Â Generazione Risorsa e Pagine per Filament 5...");
+        $this->warn("ðŸ› ï¸ Generazione Risorsa e Pagine per Filament 5...");
 
         // 1. Verifica che il modulo esista, altrimenti crealo come cluster
         if (!$this->moduleExists($module)) {
-            $this->warn("Ã¢Å¡Â Ã¯Â¸Â Il modulo '{$module}' non esiste. Creazione in corso...");
+            $this->warn("âš ï¸ Il modulo '{$module}' non esiste. Creazione in corso...");
 
             try {
                 $exitCode = Artisan::call('module:make', [
@@ -32,13 +32,13 @@ class MakeModuleResource extends Command
                 // $this->fixModuleProviderNamespaces($module);
 
                 if ($exitCode !== 0) {
-                    $this->error("Ã¢ÂÅ’ Errore durante la creazione del modulo '{$module}'.");
+                    $this->error("âŒ Errore durante la creazione del modulo '{$module}'.");
                     return 1;
                 }
 
-                $this->info("Ã¢Å“â€¦ Modulo '{$module}' creato come cluster.");
+                $this->info("âœ… Modulo '{$module}' creato come cluster.");
             } catch (\Exception $e) {
-                $this->error("Ã¢ÂÅ’ Errore durante la creazione del modulo: " . $e->getMessage());
+                $this->error("âŒ Errore durante la creazione del modulo: " . $e->getMessage());
                 return 1;
             }
         }
@@ -55,10 +55,10 @@ class MakeModuleResource extends Command
         $this->createMigrationIfNotExists($name, $module);
 
         // 4. Esecuzione comando nativo (genera in app/Filament)
-        $this->info("Ã°Å¸â€œÂ Creazione risorsa Filament...");
+        $this->info("ðŸ“ Creazione risorsa Filament...");
 
         try {
-            $this->info("Ã°Å¸â€â€ž Esecuzione: make:filament-resource {$name} --model-namespace=Modules\\{$module}\\Models --force");
+            $this->info("ðŸ”„ Esecuzione: make:filament-resource {$name} --model-namespace=Modules\\{$module}\\Models --force");
 
             $exitCode = Artisan::call('make:filament-resource', [
                 'model' => $name,
@@ -74,14 +74,14 @@ class MakeModuleResource extends Command
             }
 
             if ($exitCode !== 0) {
-                $this->error("Ã¢ÂÅ’ Errore durante la creazione della risorsa Filament. Exit code: {$exitCode}");
+                $this->error("âŒ Errore durante la creazione della risorsa Filament. Exit code: {$exitCode}");
                 return 1;
             }
 
-            $this->info("Ã¢Å“â€¦ Comando make:filament-resource completato.");
+            $this->info("âœ… Comando make:filament-resource completato.");
 
         } catch (\Exception $e) {
-            $this->error("Ã¢ÂÅ’ Eccezione durante la creazione della risorsa: " . $e->getMessage());
+            $this->error("âŒ Eccezione durante la creazione della risorsa: " . $e->getMessage());
             return 1;
         }
 
@@ -107,9 +107,9 @@ class MakeModuleResource extends Command
 
         if ($resourcePath) {
             $this->generateValidFilament5Resource($resourcePath, "{$targetBase}/{$resourceFile}", $module, $name);
-            $this->info("Ã¢Å“â€¦ Risorsa {$name}Resource spostata nel modulo {$module}.");
+            $this->info("âœ… Risorsa {$name}Resource spostata nel modulo {$module}.");
         } else {
-            $this->warn("Ã¢Å¡Â Ã¯Â¸Â File di risorsa non trovato: {$resourceFile}");
+            $this->warn("âš ï¸ File di risorsa non trovato: {$resourceFile}");
         }
 
         // 6. Processo la cartella delle Pagine (List, Create, Edit)
@@ -138,13 +138,13 @@ class MakeModuleResource extends Command
             if (File::isDirectory("{$sourceBase}/{$pluralName}")) {
                 File::deleteDirectory("{$sourceBase}/{$pluralName}");
             }
-            $this->info("Ã¢Å“â€¦ Pagine della risorsa spostate e aggiornate.");
+            $this->info("âœ… Pagine della risorsa spostate e aggiornate.");
         } else {
-            $this->warn("Ã¢Å¡Â Ã¯Â¸Â Cartella pagine non trovata.");
+            $this->warn("âš ï¸ Cartella pagine non trovata.");
         }
 
         Artisan::call('optimize:clear');
-        $this->info("Ã°Å¸Å¡â‚¬ Operazione completata! Modulo {$module} pronto con la risorsa {$name}Resource.");
+        $this->info("ðŸš€ Operazione completata! Modulo {$module} pronto con la risorsa {$name}Resource.");
 
         return 0;
     }
@@ -159,7 +159,7 @@ class MakeModuleResource extends Command
         $modelPath = base_path("Modules/{$module}/app/Models/{$name}.php");
 
         if (File::exists($modelPath)) {
-            $this->info("Ã¢â€žÂ¹Ã¯Â¸Â Modello {$name} giÃƒÂ  esistente.");
+            $this->info("â„¹ï¸ Modello {$name} giÃ  esistente.");
             return;
         }
 
@@ -170,7 +170,7 @@ class MakeModuleResource extends Command
 
         $modelContent = $this->getModelTemplate($name, $module);
         File::put($modelPath, $modelContent);
-        $this->info("Ã¢Å“â€¦ Modello {$name} creato con successo.");
+        $this->info("âœ… Modello {$name} creato con successo.");
     }
 
     protected function createMigrationIfNotExists($name, $module)
@@ -183,15 +183,15 @@ class MakeModuleResource extends Command
         $modulePath = base_path("Modules/{$module}");
         $migrationsDir = "{$modulePath}/database/migrations";
 
-        // Verifica se la migration esiste giÃƒÂ 
+        // Verifica se la migration esiste giÃ 
         if (File::exists($migrationsDir) && count(File::glob("{$migrationsDir}/*_{$migrationName}.php")) > 0) {
-            $this->info("Ã¢â€žÂ¹Ã¯Â¸Â Migration {$migrationName} giÃƒÂ  esistente.");
+            $this->info("â„¹ï¸ Migration {$migrationName} giÃ  esistente.");
             return;
         }
 
-        // Verifica se la tabella esiste giÃƒÂ  nel database
+        // Verifica se la tabella esiste giÃ  nel database
         if (\Schema::hasTable($tableName)) {
-            $this->info("Ã¢â€žÂ¹Ã¯Â¸Â Tabella {$tableName} giÃƒÂ  esistente nel database. Migration non creata.");
+            $this->info("â„¹ï¸ Tabella {$tableName} giÃ  esistente nel database. Migration non creata.");
             return;
         }
 
@@ -204,7 +204,7 @@ class MakeModuleResource extends Command
         $migrationContent = $this->getMigrationTemplate($tableName);
 
         File::put($migrationPath, $migrationContent);
-        $this->info("Ã¢Å“â€¦ Migration {$migrationName} creata con successo.");
+        $this->info("âœ… Migration {$migrationName} creata con successo.");
 
         // Esegui automaticamente la migration
         try {
@@ -212,10 +212,10 @@ class MakeModuleResource extends Command
                 '--path' => "Modules/{$module}/database/migrations",
                 '--force' => true,
             ]);
-            $this->info("Ã¢Å“â€¦ Migration eseguita con successo.");
+            $this->info("âœ… Migration eseguita con successo.");
         } catch (\Exception $e) {
-            $this->warn("Ã¢Å¡Â Ã¯Â¸Â Impossibile eseguire automaticamente la migration: " . $e->getMessage());
-            $this->info("Ã¢â€žÂ¹Ã¯Â¸Â Esegui manualmente: php artisan migrate --path=Modules/{$module}/database/migrations");
+            $this->warn("âš ï¸ Impossibile eseguire automaticamente la migration: " . $e->getMessage());
+            $this->info("â„¹ï¸ Esegui manualmente: php artisan migrate --path=Modules/{$module}/database/migrations");
         }
     }
 
@@ -224,7 +224,7 @@ class MakeModuleResource extends Command
         $panelPath = $this->resolvePanelProviderPath();
 
         if (!$panelPath) {
-            $this->warn('⚠️ Nessun PanelProvider trovato da aggiornare. Usa --panel=NomePanelProvider.');
+            $this->warn('Nessun PanelProvider trovato da aggiornare. Usa --panel=NomePanelProvider.');
             return;
         }
 
@@ -237,7 +237,6 @@ class MakeModuleResource extends Command
             if (str_contains($content, $needle)) {
                 $content = str_replace($needle, $replacement, $content);
             } else {
-                $content = preg_replace('/namespace App\\\\Providers\\\\Filament;\s*/', "$0" . PHP_EOL, $content, 1);
                 $content = str_replace(
                     "namespace App\\Providers\\Filament;" . PHP_EOL,
                     "namespace App\\Providers\\Filament;" . PHP_EOL . PHP_EOL . "use Greatwolf\\FilamentModuleGenerator\\Plugins\\ModuleDiscoveryPlugin;" . PHP_EOL,
@@ -256,7 +255,7 @@ class MakeModuleResource extends Command
         }
 
         File::put($panelPath, $content);
-        $this->info('✅ PanelProvider aggiornato con ModuleDiscoveryPlugin: ' . $panelPath);
+        $this->info('PanelProvider aggiornato con ModuleDiscoveryPlugin: ' . $panelPath);
     }
     protected function resolvePanelProviderPath(): ?string
     {
@@ -370,12 +369,12 @@ class MakeModuleResource extends Command
             $languagePath = "{$languageDir}/{$resourceKey}.php";
 
             if (File::exists($languagePath)) {
-                $this->info("â„¹ï¸ File lingua {$language} giÃ  esistente: {$languagePath}");
+                $this->info("File lingua {$language} già esistente: {$languagePath}");
                 continue;
             }
 
             File::put($languagePath, $this->getLanguageTemplate($name));
-            $this->info("âœ… File lingua {$language} creato: {$languagePath}");
+            $this->info("File lingua {$language} creato: {$languagePath}");
         }
     }
 
@@ -615,4 +614,3 @@ class {$name} extends Model
     }
 
 }
-

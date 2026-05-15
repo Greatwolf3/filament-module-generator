@@ -1,32 +1,39 @@
 <?php
 
-namespace Greatwolf\FilamentModuleGenerator;
+namespace Greatwolf\FilamentModuleGenerator\Plugins;
 
-use Spatie\LaravelPackageTools\Package;
-use Spatie\LaravelPackageTools\PackageServiceProvider;
-use Greatwolf\FilamentModuleGenerator\Commands\MakeModuleResource;
-use Greatwolf\FilamentModuleGenerator\Commands\ModuleManager;
+use Filament\Contracts\Plugin;
+use Filament\Panel;
+use Nwidart\Modules\Facades\Module;
 
-class FilamentModuleGeneratorServiceProvider extends PackageServiceProvider
+class ModuleDiscoveryPlugin implements Plugin
 {
-    public function configurePackage(Package $package): void
+    public static function make(): static
     {
-        $package
-            ->name('filament-module-generator')
-            ->hasConfigFile()
-            ->hasCommands([
-                MakeModuleResource::class,
-                ModuleManager::class,
-            ]);
+        return app(static::class);
     }
 
-    public function packageRegistered(): void
+    public function getId(): string
     {
-        // Register any package services here
+        return 'greatwolf-module-discovery';
     }
 
-    public function packageBooted(): void
+    public function register(Panel $panel): void
     {
-        // Register any package boot logic here
+        foreach (Module::allEnabled() as $module) {
+            $panel->discoverClusters(
+                in: $module->getPath() . '/Filament/Clusters',
+                for: 'Modules\\' . $module->getName() . '\\Filament\\Clusters',
+            );
+
+            $panel->discoverResources(
+                in: $module->getPath() . '/Filament/Resources',
+                for: 'Modules\\' . $module->getName() . '\\Filament\\Resources',
+            );
+        }
+    }
+
+    public function boot(Panel $panel): void
+    {
     }
 }

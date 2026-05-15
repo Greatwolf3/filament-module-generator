@@ -1,49 +1,40 @@
-<?php
+@php artisan package:discover --ansi
 
-namespace Greatwolf\FilamentModuleGenerator\Composer;
+   Symfony\Component\ErrorHandler\Error\FatalError
 
-use Composer\Script\Event;
+  Cannot redeclare class Greatwolf\FilamentModuleGenerator\Composer\CleanupPanelProviders (previously declared in C:\laragonzo6\www\ProvaModulo\vendor\greatwolf3\filament-module-generator\src\Commands\MakeModuleResource.php:7)
 
-class CleanupPanelProviders
-{
-    public static function prePackageUninstall(Event $event): void
-    {
-        $operation = $event->getOperation();
-        $package = method_exists($operation, 'getPackage') ? $operation->getPackage() : null;
+  at vendor\greatwolf3\filament-module-generator\src\Commands\MakeModuleResource.php:7
+      3▕ namespace Greatwolf\FilamentModuleGenerator\Composer;
+      4▕
+      5▕ use Composer\Script\Event;
+      6▕
+  ➜   7▕ class CleanupPanelProviders
+      8▕ {
+      9▕     public static function prePackageUninstall(Event $event): void
+     10▕     {
+     11▕         $operation = $event->getOperation();
 
-        if (!$package || $package->getName() !== 'greatwolf3/filament-module-generator') {
-            return;
-        }
 
-        $vendorDir = $event->getComposer()->getConfig()->get('vendor-dir');
-        $basePath = dirname($vendorDir);
-        $providersPath = $basePath . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Providers' . DIRECTORY_SEPARATOR . 'Filament';
+   Whoops\Exception\ErrorException
 
-        if (!is_dir($providersPath)) {
-            return;
-        }
+  Cannot redeclare class Greatwolf\FilamentModuleGenerator\Composer\CleanupPanelProviders (previously declared in C:\laragonzo6\www\ProvaModulo\vendor\greatwolf3\filament-module-generator\src\Commands\MakeModuleResource.php:7)
 
-        foreach (glob($providersPath . DIRECTORY_SEPARATOR . '*PanelProvider.php') ?: [] as $providerPath) {
-            $content = file_get_contents($providerPath);
+  at vendor\greatwolf3\filament-module-generator\src\Commands\MakeModuleResource.php:7
+      3▕ namespace Greatwolf\FilamentModuleGenerator\Composer;
+      4▕
+      5▕ use Composer\Script\Event;
+      6▕
+  ➜   7▕ class CleanupPanelProviders
+      8▕ {
+      9▕     public static function prePackageUninstall(Event $event): void
+     10▕     {
+     11▕         $operation = $event->getOperation();
 
-            if ($content === false) {
-                continue;
-            }
+  1   vendor\filp\whoops\src\Whoops\Run.php:520
+      Whoops\Run::handleError("Cannot redeclare class Greatwolf\FilamentModuleGenerator\Composer\CleanupPanelProviders (previously declared in C:\laragonzo6\www\ProvaModulo\vendor\greatwolf3\filament-module-generator\src\Commands\MakeModuleResource.php:7)", "C:\laragonzo6\www\ProvaModulo\vendor\greatwolf3\filament-module-generator\src\Commands\MakeModuleResource.php")
 
-            $updated = str_replace(
-                [
-                    "use Greatwolf\\FilamentModuleGenerator\\Plugins\\ModuleDiscoveryPlugin;\r\n",
-                    "use Greatwolf\\FilamentModuleGenerator\\Plugins\\ModuleDiscoveryPlugin;\n",
-                    "            ->plugin(ModuleDiscoveryPlugin::make())\r\n",
-                    "            ->plugin(ModuleDiscoveryPlugin::make())\n",
-                ],
-                '',
-                $content
-            );
+  2   [internal]:0
+      Whoops\Run::handleShutdown()
 
-            if ($updated !== $content) {
-                file_put_contents($providerPath, $updated);
-            }
-        }
-    }
-}
+Script @php artisan package:discover --ansi handling the post-autoload-dump event returned with error code 255

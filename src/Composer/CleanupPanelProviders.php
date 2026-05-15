@@ -30,12 +30,10 @@ class CleanupPanelProviders
                 continue;
             }
 
-            $updated = str_replace(
+            $updated = preg_replace(
                 [
-                    "use Greatwolf\\FilamentModuleGenerator\\Plugins\\ModuleDiscoveryPlugin;\r\n",
-                    "use Greatwolf\\FilamentModuleGenerator\\Plugins\\ModuleDiscoveryPlugin;\n",
-                    "            ->plugin(ModuleDiscoveryPlugin::make())\r\n",
-                    "            ->plugin(ModuleDiscoveryPlugin::make())\n",
+                    '/^use\s+Greatwolf\\\\FilamentModuleGenerator\\\\Plugins\\\\ModuleDiscoveryPlugin;\R/m',
+                    '/^\s*->plugin\(ModuleDiscoveryPlugin::make\(\)\)\R?/m',
                 ],
                 '',
                 $content

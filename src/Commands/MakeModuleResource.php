@@ -230,25 +230,16 @@ class MakeModuleResource extends Command
 
         $content = File::get($panelPath);
 
-        if (!str_contains($content, 'Greatwolf\\FilamentModuleGenerator\\Plugins\\ModuleDiscoveryPlugin')) {
-            $needle = "use Filament\\Widgets\\FilamentInfoWidget;";
-            $replacement = $needle . PHP_EOL . "use Greatwolf\\FilamentModuleGenerator\\Plugins\\ModuleDiscoveryPlugin;";
+        $content = preg_replace(
+            '/^use\s+Greatwolf\\\\FilamentModuleGenerator\\\\Plugins\\\\ModuleDiscoveryPlugin;\R/m',
+            '',
+            $content
+        );
 
-            if (str_contains($content, $needle)) {
-                $content = str_replace($needle, $replacement, $content);
-            } else {
-                $content = str_replace(
-                    "namespace App\\Providers\\Filament;" . PHP_EOL,
-                    "namespace App\\Providers\\Filament;" . PHP_EOL . PHP_EOL . "use Greatwolf\\FilamentModuleGenerator\\Plugins\\ModuleDiscoveryPlugin;" . PHP_EOL,
-                    $content
-                );
-            }
-        }
-
-        if (!str_contains($content, 'ModuleDiscoveryPlugin::make()')) {
+        if (!str_contains($content, 'Greatwolf\\FilamentModuleGenerator\\Plugins\\ModuleDiscoveryPlugin::make()')) {
             $content = preg_replace(
                 '/(->colors\(\[[\s\S]*?\]\))/',
-                '$1' . PHP_EOL . '            ->plugin(ModuleDiscoveryPlugin::make())',
+                '$1' . PHP_EOL . '            ->when(' . PHP_EOL . '                class_exists(\\Greatwolf\\FilamentModuleGenerator\\Plugins\\ModuleDiscoveryPlugin::class),' . PHP_EOL . '                fn (Panel $panel): Panel => $panel->plugin(\\Greatwolf\\FilamentModuleGenerator\\Plugins\\ModuleDiscoveryPlugin::make()),' . PHP_EOL . '            )',
                 $content,
                 1
             );

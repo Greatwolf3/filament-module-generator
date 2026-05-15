@@ -1,6 +1,6 @@
 {
     "name":  "greatwolf3/filament-module-generator",
-    "version":  "v4.0.6",
+    "version":  "v4.0.7",
     "description":  "Filament 5 plugin for generating Laravel modules with nwidart/laravel-modules integration",
     "keywords":  [
                      "laravel",

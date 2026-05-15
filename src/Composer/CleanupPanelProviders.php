@@ -34,6 +34,7 @@ class CleanupPanelProviders
                 [
                     '/^use\s+Greatwolf\\\\FilamentModuleGenerator\\\\Plugins\\\\ModuleDiscoveryPlugin;\R/m',
                     '/^\s*->plugin\(ModuleDiscoveryPlugin::make\(\)\)\R?/m',
+                    '/^\s*->when\(\R\s*class_exists\(\\\\Greatwolf\\\\FilamentModuleGenerator\\\\Plugins\\\\ModuleDiscoveryPlugin::class\),\R\s*fn \(Panel \$panel\): Panel => \$panel->plugin\(\\\\Greatwolf\\\\FilamentModuleGenerator\\\\Plugins\\\\ModuleDiscoveryPlugin::make\(\)\),\R\s*\)\R?/m',
                 ],
                 '',
                 $content
